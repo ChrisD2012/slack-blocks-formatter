@@ -12,7 +12,7 @@ async function formatToSlackBlock() {
 
   status.textContent = "Sending to OpenAI...";
 
- const prompt = `You are an expert Slack Block Kit formatter.
+  const prompt = `You are an expert Slack Block Kit formatter.
 
 Convert the following raw text message into a professional Slack Block Kit JSON array of blocks suitable for a broad audience. 
 
@@ -51,9 +51,23 @@ ${rawText}`;
     }
 
     const data = await response.json();
-    const result = data.choices[0].message.content.trim();
+    const rawResult = data.choices[0].message.content.trim();
 
-    output.value = result;
+    try {
+      // Parse the returned JSON array of blocks
+      const blocksArray = JSON.parse(rawResult);
+
+      // Wrap in "blocks" key for Slack Block Kit format
+      const wrappedResult = { blocks: blocksArray };
+
+      // Pretty-print JSON into textarea
+      output.value = JSON.stringify(wrappedResult, null, 2);
+    } catch (parseError) {
+      // If parsing fails, show raw text for debugging
+      output.value = rawResult;
+      console.error("JSON parsing error:", parseError);
+    }
+
     outputSection.classList.remove("hidden");
     status.textContent = "Block generated successfully.";
   } catch (error) {
