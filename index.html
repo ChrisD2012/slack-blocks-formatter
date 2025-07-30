@@ -89,7 +89,12 @@
         return;
       }
 
-      const prompt = `Convert the following message into a valid Slack Block Kit JSON object. Just return the JSON, nothing else.\n\nMessage:\n"${rawText}"`;
+      const prompt = `Convert the following message into a valid Slack Block Kit JSON object.
+The output should be professionally styled—no emojis, casual language, or informal tone.
+This message will be used for a formal update, so ensure the layout is clean and business-appropriate.
+Return only the JSON object—no additional commentary, explanations, or formatting.
+Message:
+${rawText}"`;
 
       button.disabled = true;
       button.textContent = "Generating...";
