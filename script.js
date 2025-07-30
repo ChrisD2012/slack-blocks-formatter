@@ -18,10 +18,12 @@ Convert the following raw text message into a professional Slack Block Kit JSON 
 
 - Use "section" and "divider" blocks where appropriate.
 - No emojis or informal language.
+- include headers and sections
 - Structure the content clearly with sections separated by dividers.
 - Return strictly valid JSON that can be directly pasted into https://app.slack.com/block-kit-builder without modification.
 - Do not include any explanation, code blocks, or extra text—only the JSON array.
 - Follow the formatting used by Slack Blocks
+-Ensure to provide Object in out put
 
 Message:
 ${rawText}`;
