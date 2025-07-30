@@ -3,164 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Slack Block Generator</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f4f4f4;
-      padding: 2em;
-    }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      background: white;
-      padding: 2em;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    label {
-      font-weight: bold;
-      margin-top: 1em;
-      display: block;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 0.5em;
-      margin-top: 0.3em;
-      margin-bottom: 1em;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      margin-right: 0.5em;
-      margin-bottom: 1em;
-      padding: 0.6em 1.2em;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-    .button-row a {
-      display: inline-block;
-      margin-top: 1em;
-    }
-  </style>
+  <title>Slack Blocks Formatter</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-  <div class="container">
-    <h1>Slack Block JSON Formatter</h1>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-4">Slack Blocks Formatter</h1>
 
-    <label for="apiKey">🔑 OpenAI API Key:</label>
-    <input type="password" id="apiKey" placeholder="sk-..." />
+    <label class="block mb-2 font-semibold">OpenAI API Key:</label>
+    <input id="apiKey" type="password" class="w-full p-2 border border-gray-300 rounded mb-4" placeholder="sk-..." />
 
-    <label for="rawText">📝 Input Text:</label>
-    <textarea id="rawText" rows="6" placeholder="Enter raw Slack message or idea..."></textarea>
+    <label class="block mb-2 font-semibold">Raw Text Input:</label>
+    <textarea id="rawText" rows="8" class="w-full p-2 border border-gray-300 rounded mb-4" placeholder="Paste your raw text here..."></textarea>
 
-    <button id="generateButton" onclick="generateBlock()">Generate Block</button>
+    <button onclick="formatToSlackBlock()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Generate Slack Block</button>
 
-    <label for="output">📦 Generated Block JSON:</label>
-    <textarea id="output" rows="12" readonly></textarea>
+    <div id="outputSection" class="mt-6 hidden">
+      <label class="block mt-6 mb-2 font-semibold">Formatted Slack Block JSON:</label>
+      <textarea id="blockOutput" rows="12" readonly class="w-full p-2 border border-gray-300 rounded mb-4 font-mono"></textarea>
 
-    <div class="button-row">
-      <button onclick="copyToClipboard()">Copy</button>
-      <button onclick="downloadJSON()">Download JSON</button>
-      <button onclick="clearFields()">Clear</button>
-      <a href="https://app.slack.com/block-kit-builder/T024F4EL1" target="_blank">Open Slack Block Kit Builder ↗</a>
+      <div class="flex gap-4 flex-wrap">
+        <button onclick="copyOutput()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Copy</button>
+        <button onclick="downloadJSON()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">Download JSON</button>
+        <button onclick="clearForm()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Clear</button>
+        <a href="https://app.slack.com/block-kit-builder/T024F4EL1" target="_blank" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Open in Slack Block Kit</a>
+      </div>
     </div>
+
+    <p id="status" class="mt-4 text-sm text-gray-600"></p>
   </div>
 
-  <script>
-    async function generateBlock() {
-      const apiKey = document.getElementById("apiKey").value.trim();
-      const rawText = document.getElementById("rawText").value.trim();
-      const outputBox = document.getElementById("output");
-      const button = document.getElementById("generateButton");
-
-      if (!apiKey || !rawText) {
-        alert("Please enter both an API key and some input text.");
-        return;
-      }
-
-      const prompt = `Convert the following message into a valid Slack Block Kit JSON object.The output should be professionally styled—no emojis. This message will be used for a formal update, so ensure the layout is clean and business-appropriate. Return only the JSON object—no additional commentary, explanations, or formatting. Message: ${rawText}"`;
-
-      button.disabled = true;
-      button.textContent = "Generating...";
-
-      try {
-        const response = await fetchWithRetry(apiKey, prompt);
-        const data = await response.json();
-
-        const output = data.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
-        outputBox.value = output;
-      } catch (err) {
-        outputBox.value = `Error: ${err.message}`;
-      }
-
-      button.disabled = false;
-      button.textContent = "Generate Block";
-    }
-
-    async function fetchWithRetry(apiKey, prompt, retries = 3, delay = 2000) {
-      for (let i = 0; i < retries; i++) {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.2
-          })
-        });
-
-        if (response.status === 429) {
-          if (i < retries - 1) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          } else {
-            throw new Error("Too many requests. Please wait and try again later.");
-          }
-        }
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error?.message || "Request failed.");
-        }
-
-        return response;
-      }
-    }
-
-    function copyToClipboard() {
-      const output = document.getElementById("output");
-      output.select();
-      document.execCommand("copy");
-      alert("Copied to clipboard!");
-    }
-
-    function downloadJSON() {
-      const blob = new Blob([document.getElementById("output").value], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "slack-block.json";
-      a.click();
-    }
-
-    function clearFields() {
-      document.getElementById("rawText").value = "";
-      document.getElementById("output").value = "";
-    }
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
