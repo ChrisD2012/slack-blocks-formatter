@@ -12,7 +12,19 @@ async function formatToSlackBlock() {
 
   status.textContent = "Sending to OpenAI...";
 
-  const prompt = `Convert the following raw text into a valid Slack Block Kit JSON with block elements like "section", "divider", etc., so it can be pasted directly into Slack Block Kit Builder. Output should be a full JSON array of blocks, no extra text. Text:\n\n${rawText}`;
+ const prompt = `You are an expert Slack Block Kit formatter.
+
+Convert the following raw text message into a professional Slack Block Kit JSON array of blocks suitable for a broad audience. 
+
+- Use "section" and "divider" blocks where appropriate.
+- No emojis or informal language.
+- Structure the content clearly with sections separated by dividers.
+- Return strictly valid JSON that can be directly pasted into https://app.slack.com/block-kit-builder without modification.
+- Do not include any explanation, code blocks, or extra text—only the JSON array.
+- Follow the formatting used by Slack Blocks
+
+Message:
+${rawText}`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
