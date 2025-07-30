@@ -7,12 +7,11 @@ async function generateBlock() {
       return;
     }
   
-    const prompt = ``Convert the following message into a valid Slack Block Kit JSON object.
+    const prompt = `Convert the following message into a valid Slack Block Kit JSON object.
 The output should be professionally styled—no emojis, casual language, or informal tone.
 This message will be used for a formal update, so ensure the layout is clean and business-appropriate.
 Return only the JSON object—no additional commentary, explanations, or formatting.
-Message:
-${rawText}"`;
+Message: ${rawText}"`;
   
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
