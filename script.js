@@ -56,16 +56,12 @@ ${rawText}`;
     const rawResult = data.choices[0].message.content.trim();
 
     try {
-      // Parse the returned JSON array of blocks
       const blocksArray = JSON.parse(rawResult);
-
-      // Wrap in "blocks" key for Slack Block Kit format
       const wrappedResult = { blocks: blocksArray };
 
-      // Pretty-print JSON into textarea
       output.value = JSON.stringify(wrappedResult, null, 2);
+      renderBlockPreview(blocksArray);
     } catch (parseError) {
-      // If parsing fails, show raw text for debugging
       output.value = rawResult;
       console.error("JSON parsing error:", parseError);
     }
@@ -103,4 +99,40 @@ function clearForm() {
   document.getElementById('apiKey').value = "";
   document.getElementById('outputSection').classList.add("hidden");
   document.getElementById('status').textContent = "";
+  document.getElementById('blockPreview').innerHTML = "";
+}
+
+function renderBlockPreview(blocks) {
+  const preview = document.getElementById("blockPreview");
+  preview.innerHTML = "";
+
+  blocks.forEach(block => {
+    let el;
+
+    switch (block.type) {
+      case "header":
+        el = document.createElement("div");
+        el.className = "text-lg font-bold text-gray-800";
+        el.textContent = block.text?.text || "";
+        break;
+
+      case "section":
+        el = document.createElement("div");
+        el.className = "text-gray-700";
+        el.textContent = block.text?.text || "";
+        break;
+
+      case "divider":
+        el = document.createElement("hr");
+        el.className = "border-t border-gray-300";
+        break;
+
+      default:
+        el = document.createElement("div");
+        el.className = "text-gray-500 italic";
+        el.textContent = `[Unsupported block type: ${block.type}]`;
+    }
+
+    preview.appendChild(el);
+  });
 }
