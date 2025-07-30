@@ -44,6 +44,10 @@
     button:hover {
       background-color: #0056b3;
     }
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
     .button-row a {
       display: inline-block;
       margin-top: 1em;
@@ -60,7 +64,7 @@
     <label for="rawText">📝 Input Text:</label>
     <textarea id="rawText" rows="6" placeholder="Enter raw Slack message or idea..."></textarea>
 
-    <button onclick="generateBlock()">Generate Block</button>
+    <button id="generateButton" onclick="generateBlock()">Generate Block</button>
 
     <label for="output">📦 Generated Block JSON:</label>
     <textarea id="output" rows="12" readonly></textarea>
@@ -77,6 +81,8 @@
     async function generateBlock() {
       const apiKey = document.getElementById("apiKey").value.trim();
       const rawText = document.getElementById("rawText").value.trim();
+      const outputBox = document.getElementById("output");
+      const button = document.getElementById("generateButton");
 
       if (!apiKey || !rawText) {
         alert("Please enter both an API key and some input text.");
@@ -85,25 +91,54 @@
 
       const prompt = `Convert the following message into a valid Slack Block Kit JSON object. Just return the JSON, nothing else.\n\nMessage:\n"${rawText}"`;
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4", // or "gpt-3.5-turbo"
-          messages: [
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.2
-        })
-      });
+      button.disabled = true;
+      button.textContent = "Generating...";
 
-      const data = await response.json();
-      const output = data.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+      try {
+        const response = await fetchWithRetry(apiKey, prompt);
+        const data = await response.json();
 
-      document.getElementById("output").value = output;
+        const output = data.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+        outputBox.value = output;
+      } catch (err) {
+        outputBox.value = `Error: ${err.message}`;
+      }
+
+      button.disabled = false;
+      button.textContent = "Generate Block";
+    }
+
+    async function fetchWithRetry(apiKey, prompt, retries = 3, delay = 2000) {
+      for (let i = 0; i < retries; i++) {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "gpt-4",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.2
+          })
+        });
+
+        if (response.status === 429) {
+          if (i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error("Too many requests. Please wait and try again later.");
+          }
+        }
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error?.message || "Request failed.");
+        }
+
+        return response;
+      }
     }
 
     function copyToClipboard() {
